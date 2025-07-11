@@ -1,0 +1,64 @@
+﻿<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <TargetFrameworkVersion>v4.8.1</TargetFrameworkVersion>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>FaviconGenerator</RootNamespace>
+    <AssemblyName>FaviconGenerator</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Reference Include="System"/>
+    <Reference Include="System.Core"/>
+    <Reference Include="System.Drawing"/>
+    <Reference Include="System.Windows.Forms"/>
+    <Reference Include="IconLib"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="C:\csharp-dev\FaviconGenerator\MainForm.cs" />
+    <Compile Include="C:\csharp-dev\FaviconGenerator\InputDialog.cs" />
+    <Compile Include="C:\csharp-dev\FaviconGenerator\Program.cs" />
+  </ItemGroup>
+
+  <Target Name="Build">
+    <MakeDir Directories="$(OutputPath)" Condition="!Exists('$(OutputPath)')" />
+    <Csc Sources="@(Compile)"
+         ReferencePath="C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8.1\;C:\csharp-dev\FaviconGenerator\packages\IconLib.0.74.3.1-beta\lib\net40\"
+         TargetType="$(OutputType)"
+         OutputAssembly="$(OutputPath)$(AssemblyName).exe"
+         DebugType="$(DebugType)"
+         Optimize="$(Optimize)"
+         DefineConstants="$(DefineConstants)"
+         ErrorReport="$(ErrorReport)"
+         WarningLevel="$(WarningLevel)"
+         EmbedAllSources="true"
+         PdbFile="$(OutputPath)$(AssemblyName).pdb" />
+  </Target>
+
+</Project>
