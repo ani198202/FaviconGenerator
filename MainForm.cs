@@ -56,7 +56,7 @@ namespace FaviconGenerator
                 Location = new Point(410, 10),
                 Width = 70
             };
-            btnBrowseSource.Click += BrowseSource_Click;
+            btnBrowseSource.Click += new EventHandler(BrowseSource_Click);
 
             // 2. 第二行：目的地目錄
             var lblDest = new Label
@@ -78,7 +78,7 @@ namespace FaviconGenerator
                 Location = new Point(410, 40),
                 Width = 70
             };
-            btnBrowseDest.Click += BrowseDest_Click;
+            btnBrowseDest.Click += new EventHandler(BrowseDest_Click);
 
             // 3. 第三行：尺寸選擇
             var lblSize = new Label
@@ -112,7 +112,7 @@ namespace FaviconGenerator
                 Width = 100,
                 BackColor = Color.LightGreen
             };
-            btnGenerate.Click += btnGenerate_Click; // 非同步版本
+            btnGenerate.Click += new EventHandler(btnGenerate_Click); // 非同步版本
 
             btnExit = new Button
             {
@@ -120,7 +120,7 @@ namespace FaviconGenerator
                 Location = new Point(210, 110),
                 Width = 100
             };
-            btnExit.Click += (s, e) => this.Close();
+            btnExit.Click += delegate(object s, EventArgs e) { this.Close(); };
 
             btnHelp = new Button
             {
@@ -128,7 +128,7 @@ namespace FaviconGenerator
                 Location = new Point(320, 110),
                 Width = 100
             };
-            btnHelp.Click += ShowHelp;
+            btnHelp.Click += new EventHandler(ShowHelp);
 
             // 將所有控制項加入表單
             this.Controls.AddRange(new Control[] {
@@ -178,7 +178,7 @@ namespace FaviconGenerator
 
             try
             {
-                await Task.Run(() =>
+                await Task.Factory.StartNew(() =>
                 {
                     // 將原有同步程式碼移至此處
                     if (string.IsNullOrEmpty(txtSource.Text) || !File.Exists(txtSource.Text))
@@ -225,9 +225,16 @@ namespace FaviconGenerator
             {
                 MessageBox.Show("圖片尺寸過大，請減少尺寸或使用較小的原始圖檔！", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Parameter is not valid"))
+            catch (ArgumentException ex)
             {
-                MessageBox.Show("不支援的圖片格式，請使用 PNG 或其他標準格式！", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                if (ex.Message.Contains("Parameter is not valid"))
+                {
+                    MessageBox.Show("不支援的圖片格式，請使用 PNG 或其他標準格式！", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    MessageBox.Show(string.Format("生成失敗: {0}\n{1}", ex.GetType().Name, ex.Message), "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             }
             catch (Exception ex)
             {
@@ -252,36 +259,39 @@ namespace FaviconGenerator
 
             string icoPath = Path.Combine(outputDir, string.Format("{0}.ico", baseName));
 
-            using (var original = Image.FromFile(sourcePath))
-            using (var multiIcon = new MultiIcon())
+            using (Image original = Image.FromFile(sourcePath))
             {
-                var icon = multiIcon.Add("Favicon"); // 圖標名稱（可自訂）
-
-                foreach (var size in sizes)
+                using (MultiIcon multiIcon = new MultiIcon())
                 {
-                    // 修改這裡：建立支援透明度的 Bitmap
-                    using (var resized = new Bitmap(size, size, PixelFormat.Format32bppArgb)) // 新增 PixelFormat
-                    using (var g = Graphics.FromImage(resized))
-                    {
-                        g.Clear(Color.Transparent); // 清除為透明背景
-                        g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
-                        g.DrawImage(original, 0, 0, size, size);
-                        icon.Add(resized);
-                    }
-                }
+                    IconImage icon = multiIcon.Add("Favicon"); // 圖標名稱（可自訂）
 
-                // 儲存為 ICO 檔案
-                multiIcon.Save(icoPath, MultiIconFormat.ICO);
+                    foreach (int size in sizes)
+                    {
+                        using (Bitmap resized = new Bitmap(size, size, PixelFormat.Format32bppArgb)) // 新增 PixelFormat
+                        {
+                            using (Graphics g = Graphics.FromImage(resized))
+                            {
+                                g.Clear(Color.Transparent); // 清除為透明背景
+                                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                                g.DrawImage(original, 0, 0, size, size);
+                            }
+                            icon.Add(resized);
+                        }
+                    }
+
+                    // 儲存為 ICO 檔案
+                    multiIcon.Save(icoPath, MultiIconFormat.ICO);
+                }
             }
         }
 
         private void GeneratePngFiles(string sourcePath, string outputDir, string baseName, IEnumerable<int> sizes)
         {
-            using (var original = Image.FromFile(sourcePath))
+            using (Image original = Image.FromFile(sourcePath))
             {
-                foreach (var size in sizes)
+                foreach (int size in sizes)
                 {
-                    using (var resized = new Bitmap(original, new Size(size, size)))
+                    using (Bitmap resized = new Bitmap(original, new Size(size, size)))
                     {
                         string pngPath = Path.Combine(outputDir, string.Format("{0}_{1}x{1}.png", baseName, size));
                         resized.Save(pngPath, System.Drawing.Imaging.ImageFormat.Png);
@@ -292,22 +302,28 @@ namespace FaviconGenerator
 
         private void HandleCustomSize(string sourcePath, string outputDir, string baseName)
         {
-            using (var dialog = new InputDialog("自訂尺寸", "請輸入尺寸 (多個尺寸用逗號分隔):", "16,32,48"))
+            using (InputDialog dialog = new InputDialog("自訂尺寸", "請輸入尺寸 (多個尺寸用逗號分隔):", "16,32,48"))
             {
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
-                    var customSizes = dialog.InputText.Split(',')
-                        .Select(s => int.TryParse(s.Trim(), out int size) ? size : 0)
-                        .Where(size => size > 0)
-                        .ToArray();
+                    string[] parts = dialog.InputText.Split(',');
+                    List<int> customSizes = new List<int>();
+                    foreach (string s in parts)
+                    {
+                        int size;
+                        if (int.TryParse(s.Trim(), out size) && size > 0)
+                        {
+                            customSizes.Add(size);
+                        }
+                    }
 
-                    if (customSizes.Length == 0)
+                    if (customSizes.Count == 0)
                     {
                         MessageBox.Show("無效的尺寸輸入！", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
                         return;
                     }
 
-                    GenerateIcoFile(sourcePath, outputDir, baseName, customSizes);
+                    GenerateIcoFile(sourcePath, outputDir, baseName, customSizes.ToArray());
                 }
             }
         }
