@@ -225,7 +225,7 @@ namespace FaviconGenerator
             {
                 MessageBox.Show("圖片尺寸過大，請減少尺寸或使用較小的原始圖檔！", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-            catch (ArgumentException ex) when (ex.Message.Contains("Parameter is not valid"));
+            catch (ArgumentException ex) when (ex.Message.Contains("Parameter is not valid"))
             {
                 MessageBox.Show("不支援的圖片格式，請使用 PNG 或其他標準格式！", "錯誤", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
@@ -297,7 +297,7 @@ namespace FaviconGenerator
                 if (dialog.ShowDialog() == DialogResult.OK)
                 {
                     var customSizes = dialog.InputText.Split(',')
-                        .Select(s => int.TryParse(s.Trim(), out int size) ? size : 0);
+                        .Select(s => int.TryParse(s.Trim(), out int size) ? size : 0)
                         .Where(size => size > 0)
                         .ToArray();
 
